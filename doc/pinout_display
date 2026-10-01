@@ -37,6 +37,10 @@ EXP1-Pins 6, 7 und 8 bleiben unbelegt. Signalnamen koennen je nach Displayherste
 
 Die Firmware aktiviert interne Pull-ups. Der Encoder muss die Kanaele beim Schalten nach GND ziehen. Die uebrigen EXP2-Pins (insbesondere SD-Karte und Versorgung) bleiben frei. Drehrichtung falsch herum: Kanaele A und B tauschen.
 
+### Externer Reset-Taster
+
+Ein optionaler, normalerweise offener Taster kann parallel zum Reset-Taster auf dem Mega angeschlossen werden: ein Kontakt an `RESET`, der andere an `GND`. Beim Druecken wird der Mega zurueckgesetzt. Nicht mit dem Encoder-Taster an D4 verwechseln und `RESET` nicht mit 5 V verbinden.
+
 ### Bedienung
 
 - Das Display ist das Schaltfeld: bei 16 Relais ein 4x4-Raster, bei 32 Relais ein 8x4-Raster. Die angezeigte Nummerierung folgt der gewaehlten Basis (bei Basis 0 z. B. `R00` bis `R15`).
