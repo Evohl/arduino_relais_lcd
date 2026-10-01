@@ -1,0 +1,59 @@
+## Arduino Mega: Relais, ST7920-12864 und Drehgeber
+
+Diese Belegung gilt fuer einen Arduino Mega 2560 und ein 128x64-Grafikdisplay mit ST7920-Controller und EXP1/EXP2-Steckern. Das Display wird im seriellen 3-Draht-Modus betrieben. Die Firmware verwendet die Arduino-Bibliothek **U8g2**.
+
+### Relaisboards
+
+| Relais | Mega-Pin | Board |
+| --- | ---: | --- |
+| 1-8 | D22-D29 | Board 1 |
+| 9-16 | D30-D37 | Board 1 |
+| 17-24 | D38-D45 | Board 2 |
+| 25-32 | D46-D53 | Board 2 |
+
+Ein Langdruck des Encoder-Tasters (5 Sekunden) oeffnet das Einstellungsmenue. Dort lassen sich 16/32 Kanaele, die Nummerierungsbasis 0/1 und der Relais-Test waehlen. Kanalzahl und Nummerierungsbasis bleiben im EEPROM gespeichert. Beim Wechsel von 32 auf 16 werden Kanaele 17-32 ausgeschaltet. `RELAY_COUNT` in der Build-Konfiguration ist der Standard, falls noch keine gueltige Kanalzahl gespeichert ist. Die Standard-Nummerierungsbasis ist 1. Die Firmware geht von aktiv-LOW-Eingaengen aus: LOW = EIN, HIGH = AUS.
+
+### Display EXP1
+
+| EXP1-Pin | Signal | Arduino Mega | Funktion |
+| ---: | --- | ---: | --- |
+| 1 | BEEPER | D8 | Summer, derzeit unbenutzt |
+| 2 | ENC_BTN | D4 | Encoder-Taster, gegen GND schaltend |
+| 3 | LCD_EN / SID | D11 | Serielle Datenleitung (MOSI) |
+| 4 | LCD_RS / CS | D12 | Chip Select |
+| 5 | LCD_D4 / SCLK | D13 | Serieller Takt |
+| 9 | GND | GND | Gemeinsame Logikmasse |
+| 10 | VCC | 5V | Displayversorgung, nur wenn das Display 5 V unterstuetzt |
+
+EXP1-Pins 6, 7 und 8 bleiben unbelegt. Signalnamen koennen je nach Displayhersteller abweichen; vor dem Anschluss die Beschriftung des konkreten Moduls pruefen.
+
+### Drehgeber EXP2
+
+| EXP2-Pin | Signal | Arduino Mega | Funktion |
+| ---: | --- | ---: | --- |
+| 3 | ENCA / CLK | D2 | Encoder-Kanal A, Interrupt |
+| 5 | ENCB / DT | D3 | Encoder-Kanal B, Interrupt |
+| 9 | GND | GND | Mit EXP1-Pin 9 verbinden |
+
+Die Firmware aktiviert interne Pull-ups. Der Encoder muss die Kanaele beim Schalten nach GND ziehen. Die uebrigen EXP2-Pins (insbesondere SD-Karte und Versorgung) bleiben frei. Drehrichtung falsch herum: Kanaele A und B tauschen.
+
+### Bedienung
+
+- Das Display ist das Schaltfeld: bei 16 Relais ein 4x4-Raster, bei 32 Relais ein 8x4-Raster. Die angezeigte Nummerierung folgt der gewaehlten Basis (bei Basis 0 z. B. `R00` bis `R15`).
+- Leeres Kaestchen = AUS, gefuelltes Kaestchen = EIN. Der Strich unter einem Kaestchen markiert den ausgewaehlten Kanal.
+- Im Raster Encoder drehen: Relais auswaehlen. Kurz druecken: ausgewaehltes Relais umschalten.
+- Encoder 5 Sekunden halten: Menue oeffnen oder schliessen. Im Menue drehen und kurz druecken, um Kanalzahl oder Nummerierungsbasis zu wechseln, den Test zu starten oder zurueckzukehren.
+- Der Relais-Test schaltet alle aktiven Kanaele ein und danach jede Sekunde den naechsten Kanal aus. Ein Tastendruck bricht den Test ab und schaltet alle Kanaele aus. Nur mit sicherer Beschaltung und ausreichend dimensionierter Relaisversorgung starten.
+- Seriell mit 115200 Baud und Zeilenende: bei Basis 1 z. B. `1,2,12:ON`, `12:OFF`; bei Basis 0 z. B. `0,1,11:ON`, `11:OFF`. `all:ON` und `all:OFF` bleiben unabhaengig von der Basis.
+
+### Build
+
+PlatformIO installiert U8g2 gemaess `platformio.ini`. `pio run` baut beide Profile; einzeln: `pio run -e mega16` oder `pio run -e mega32`. In der Arduino IDE U8g2 ueber den Library Manager installieren und `RELAY_COUNT` im Sketch auf `16` oder `32` setzen.
+
+### Versorgung und sichere Verdrahtung
+
+- Relais-Spulen nicht aus dem 5-V-Pin des Mega versorgen. Relaisboards mit einer separaten, passend zur Spulenanzahl und zum Board dimensionierten Versorgung speisen.
+- Die Logikversorgung muss zur Eingangsspezifikation des Relaisboards passen. Vor direktem Anschluss den Eingangsstrom je Kanal und die Gesamtstromgrenzen der Mega-I/O-Pins pruefen; bei zu hoher Last geeignete Treiberstufen verwenden.
+- Bei nicht galvanisch getrennten Eingangsseiten Mega-GND und Logik-GND der Relaisboards verbinden. Eine vorhandene Optokoppler-Isolation nur gemaess Schaltplan des konkreten Boards verdrahten; Jumper wie `VCC/JD-VCC` nicht ohne dessen Dokumentation umstecken.
+- Die Firmware setzt die aktiv-LOW-Ausgaenge beim Start zuerst auf HIGH. Das verhindert keinen kurzen Einschaltimpuls waehrend Reset/Boot; fuer definierte AUS-Zustaende in dieser Phase hardwareseitige Pull-ups an den Board-Eingaengen vorsehen und am realen Board testen.
+- Netzspannung nur mit geeigneten Klemmen, Gehaeuse, Zugentlastung, Absicherung und ausreichenden Luft-/Kriechstrecken schalten. Keine Netzspannung auf Steckbrett oder offenen Jumperleitungen fuehren.
