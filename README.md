@@ -10,7 +10,7 @@ There is no electrical feedback from the relay contacts. The display shows the s
 flowchart LR
 	operator[Operator] --> controller["RepRap Smart Controller 12864<br/>LCD, encoder, and pushbutton"]
 	controller <-->|EXP1 / EXP2| mega["Arduino Mega 2560<br/>Control logic and EEPROM"]
-	reset[Optional external reset button] -->|Momentary contact: RESET to GND| mega
+	reset[Optional reset button] -->|Momentary contact: RESET to GND| mega
 	computer[PC or host program] <-->|USB serial, 115200 baud| mega
 	mega -->|D22-D37| board1["Relay board 1<br/>Channels 1-16"]
 	mega -->|Optional: D38-D53| board2["Relay board 2<br/>Channels 17-32"]
@@ -51,10 +51,12 @@ This project does not provide scheduling, sensor input, or network control. It i
 | Relays 9-16 | D30-D37 |
 | Relays 17-24 | D38-D45 |
 | Relays 25-32 | D46-D53 |
-| Optional external reset button | RESET to GND |
+| Display beeper (EXP1 pin 1) | D8 |
+| Display KILL button (EXP2 pin 8) | D5, switch to GND |
+| Optional reset button | Mega RESET to GND |
 | Smart Controller EXP1 / EXP2 | See wiring diagram below |
 
-The standard RepRap Smart Controller uses a 128x64 ST7920 display in 3-wire mode and is powered from 5 V. The Mega also has a built-in reset button; an external normally-open pushbutton can be wired in parallel between RESET and GND. Do not connect RESET to 5 V. The diagram shows the pin mapping used by this firmware; check the connector labels and pinout for your exact controller revision before wiring it.
+Connector orientation and signal assignments can vary between display revisions; use the pin numbers and labels on your exact module, not its apparent left-to-right orientation in a drawing. Your shown pinout labels EXP1 pins 3-5 as NC and pins 6-7 as DOGLCD_CS / DOGLCD_A0. The sketch currently uses the U8g2 ST7920 driver with display signals on Mega D11-D13, so its LCD wiring is not verified for this module. Do not connect LCD signals using the generic diagram until the display controller and driver wiring are confirmed. The shown EXP1 pin 8 is NC, not RESET. Use a separate normally-open button between Mega RESET and GND if a hardware reset button is needed; never connect RESET to 5 V.
 
 ```mermaid
 flowchart LR
@@ -68,22 +70,20 @@ flowchart LR
 		d2[D2]
 		d3[D3]
 		d4[D4]
-		d11[D11]
-		d12[D12]
-		d13[D13]
+		d5[D5]
+		d8[D8]
 	end
-	exp1 -->|Pin 10 VCC| v5
-	exp1 -->|Pin 9 GND| gnd
+	exp1 -->|Pin 1 beeper| d8
 	exp1 -->|Pin 2 encoder button| d4
-	exp1 -->|Pin 3 LCD_EN / SID| d11
-	exp1 -->|Pin 4 LCD_RS / CS| d12
-	exp1 -->|Pin 5 LCD_D4 / SCLK| d13
-	exp2 -->|Pin 9 GND| gnd
+	exp1 -->|Pin 9 GND| gnd
+	exp1 -->|Pin 10 VCC| v5
 	exp2 -->|Pin 3 encoder A / CLK| d2
 	exp2 -->|Pin 5 encoder B / DT| d3
+	exp2 -.->|Pin 8 KILL_PIN, switch to GND| d5
+	exp2 -->|Pin 9 GND| gnd
 ```
 
-The SD-card signals and beeper are not used by the current firmware. See [doc/pinout_display](doc/pinout_display) for connector details and wiring notes.
+The SD-card signals are not used. When present, the beeper connects to D8 and sounds on accepted encoder-button presses. The EXP2 KILL button connects to D5 and GND; pressing it turns all active relays on if any are off, or turns them all off if they are already on. This is not an emergency stop; use a separate hardware cutoff for the relay supply. See [doc/pinout_display](doc/pinout_display) for connector details and wiring notes.
 
 ## Operation
 

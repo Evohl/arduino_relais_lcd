@@ -1,6 +1,6 @@
-## Arduino Mega: Relais, ST7920-12864 und Drehgeber
+## Arduino Mega: Relais, 12864-Display und Drehgeber
 
-Diese Belegung gilt fuer einen Arduino Mega 2560 und ein 128x64-Grafikdisplay mit ST7920-Controller und EXP1/EXP2-Steckern. Das Display wird im seriellen 3-Draht-Modus betrieben. Die Firmware verwendet die Arduino-Bibliothek **U8g2**.
+Diese Belegung folgt dem gezeigten EXP1/EXP2-Pinout und gilt fuer einen Arduino Mega 2560. Die Firmware verwendet derzeit U8g2 mit einem ST7920-Treiber. Das gezeigte Modul kennzeichnet EXP1-Pins 6/7 jedoch als `DOGLCD_CS`/`DOGLCD_A0` und EXP1-Pins 3-5 als `NC`; die LCD-Signalverdrahtung ist daher mit der aktuellen Firmware nicht verifiziert. LCD-Signale erst nach Anpassung an den konkreten Displaycontroller anschliessen.
 
 ### Relaisboards
 
@@ -17,29 +17,39 @@ Ein Langdruck des Encoder-Tasters (5 Sekunden) oeffnet das Einstellungsmenue. Do
 
 | EXP1-Pin | Signal | Arduino Mega | Funktion |
 | ---: | --- | ---: | --- |
-| 1 | BEEPER | D8 | Summer, derzeit unbenutzt |
-| 2 | ENC_BTN | D4 | Encoder-Taster, gegen GND schaltend |
-| 3 | LCD_EN / SID | D11 | Serielle Datenleitung (MOSI) |
-| 4 | LCD_RS / CS | D12 | Chip Select |
-| 5 | LCD_D4 / SCLK | D13 | Serieller Takt |
+| 1 | BEEPER | D8 | Summer, kurze Rueckmeldung bei Tastendruck |
+| 2 | BTN_ENC | D4 | Encoder-Taster, gegen GND schaltend |
+| 3 | NC | - | Nicht belegt |
+| 4 | NC | - | Nicht belegt |
+| 5 | NC | - | Nicht belegt |
+| 6 | DOGLCD_CS | - | Display-Chip-Select, derzeit nicht verdrahtet |
+| 7 | DOGLCD_A0 | - | Display-Daten/Kommando, derzeit nicht verdrahtet |
+| 8 | NC | - | Nicht belegt, kein Reset |
 | 9 | GND | GND | Gemeinsame Logikmasse |
 | 10 | VCC | 5V | Displayversorgung, nur wenn das Display 5 V unterstuetzt |
 
-EXP1-Pins 6, 7 und 8 bleiben unbelegt. Signalnamen koennen je nach Displayhersteller abweichen; vor dem Anschluss die Beschriftung des konkreten Moduls pruefen.
+Diese Tabelle ist eine Referenz fuer die genannte Controller-Variante. Stecker koennen je nach Modul anders herum angeordnet oder abweichend belegt sein; Pin-Nummern und Signalbeschriftung am konkreten Modul pruefen. EXP1-Pin 8 ist hier nicht als RESET vorausgesetzt und darf nur nach eindeutiger Identifikation verbunden werden.
 
 ### Drehgeber EXP2
 
 | EXP2-Pin | Signal | Arduino Mega | Funktion |
 | ---: | --- | ---: | --- |
-| 3 | ENCA / CLK | D2 | Encoder-Kanal A, Interrupt |
-| 5 | ENCB / DT | D3 | Encoder-Kanal B, Interrupt |
+| 1 | MISO | - | SD-Signal, unbenutzt |
+| 2 | SCK | - | SD-Signal, unbenutzt |
+| 3 | BTN_EN2 | D2 | Encoder-Kanal A, Interrupt |
+| 4 | SDSS | - | SD-Signal, unbenutzt |
+| 5 | BTN_EN1 | D3 | Encoder-Kanal B, Interrupt |
+| 6 | MOSI | - | SD-Signal, unbenutzt |
+| 7 | SD_DET | - | SD-Signal, unbenutzt |
+| 8 | KILL_PIN | D5 | Gegen GND schalten: alle Relais ein/aus umschalten |
 | 9 | GND | GND | Mit EXP1-Pin 9 verbinden |
+| 10 | NC | - | Nicht belegt |
 
-Die Firmware aktiviert interne Pull-ups. Der Encoder muss die Kanaele beim Schalten nach GND ziehen. Die uebrigen EXP2-Pins (insbesondere SD-Karte und Versorgung) bleiben frei. Drehrichtung falsch herum: Kanaele A und B tauschen.
+Die Firmware aktiviert interne Pull-ups. Encoder-Kanaele und KILL_PIN muessen beim Schalten nach GND gezogen werden. Der Beeper an EXP1-Pin 1 wird von D8 angesteuert. KILL_PIN schaltet nach Entprellung alle aktiven Relais ein, wenn mindestens eines aus ist; sind alle an, schaltet er alle aus. Das ist kein Not-Aus; fuer ein sicheres Abschalten eine separate Hardware-Unterbrechung der Relaisversorgung vorsehen. Die uebrigen EXP2-Pins (insbesondere SD-Karte und Versorgung) bleiben frei. Drehrichtung falsch herum: Kanaele A und B tauschen.
 
 ### Externer Reset-Taster
 
-Ein optionaler, normalerweise offener Taster kann parallel zum Reset-Taster auf dem Mega angeschlossen werden: ein Kontakt an `RESET`, der andere an `GND`. Beim Druecken wird der Mega zurueckgesetzt. Nicht mit dem Encoder-Taster an D4 verwechseln und `RESET` nicht mit 5 V verbinden.
+Ein normalerweise offener Taster zwischen Mega-`RESET` und `GND` setzt den Mega zurueck. Der Reset-Taster des Displays kann dafuer nur verwendet werden, wenn dessen geschalteter Anschluss am konkreten Modul eindeutig identifiziert ist; eine feste EXP1-Pinnummer wird nicht vorausgesetzt. Unbekannte Displaypins nicht mit Mega-`RESET` verbinden. Nicht mit dem Encoder-Taster an D4 verwechseln und `RESET` nicht mit 5 V verbinden.
 
 ### Bedienung
 

@@ -23,6 +23,8 @@ const uint8_t relayPins[32] = {
 const uint8_t encoderA = 2;
 const uint8_t encoderB = 3;
 const uint8_t encoderButton = 4;
+const uint8_t killInput = 5;
+const uint8_t beeperPin = 8;
 const uint8_t displayClock = 13;
 const uint8_t displayData = 11;
 const uint8_t displayCs = 12;
@@ -65,6 +67,10 @@ unsigned long buttonChangedAt = 0;
 unsigned long buttonPressedAt = 0;
 const unsigned long buttonDebounceMs = 35;
 const unsigned long buttonLongPressMs = 5000;
+bool killLastReading = HIGH;
+bool killStableState = HIGH;
+unsigned long killChangedAt = 0;
+const unsigned long killDebounceMs = 35;
 
 const uint8_t eepromRecordSize = 4;
 const uint8_t eepromValidMarker = 0xA7;
@@ -88,6 +94,45 @@ void onEncoderChange() {
     if (step != 0) {
         if ((step > 0 && encoderDelta < 64) || (step < 0 && encoderDelta > -64)) {
             encoderDelta += step;
+        }
+    }
+}
+
+void beep() {
+    tone(beeperPin, 2400, 35);
+}
+
+void toggleAllRelays() {
+    bool allRelaysOn = true;
+    for (uint8_t i = 0; i < activeRelayCount; i++) {
+        if (!relayOn[i]) {
+            allRelaysOn = false;
+            break;
+        }
+    }
+
+    const bool turnOn = !allRelaysOn;
+    relayTestActive = false;
+    for (uint8_t i = 0; i < activeRelayCount; i++) {
+        setRelay(i, turnOn);
+    }
+    Serial.println(turnOn ? F("KILL switch: all relays ON") : F("KILL switch: all relays OFF"));
+    beep();
+}
+
+void handleKillInput() {
+    const unsigned long now = millis();
+    const bool reading = digitalRead(killInput);
+
+    if (reading != killLastReading) {
+        killLastReading = reading;
+        killChangedAt = now;
+    }
+
+    if (now - killChangedAt >= killDebounceMs && reading != killStableState) {
+        killStableState = reading;
+        if (killStableState == LOW) {
+            toggleAllRelays();
         }
     }
 }
@@ -377,6 +422,7 @@ void handleButton() {
             } else {
                 setRelay(selectedRelay, !relayOn[selectedRelay]);
             }
+            beep();
         }
     }
 
@@ -389,6 +435,7 @@ void handleButton() {
         encoderRemainder = 0;
         displayDirty = true;
         buttonLongPressHandled = true;
+        beep();
     }
 }
 
@@ -519,6 +566,8 @@ void setup() {
     pinMode(encoderA, INPUT_PULLUP);
     pinMode(encoderB, INPUT_PULLUP);
     pinMode(encoderButton, INPUT_PULLUP);
+    pinMode(killInput, INPUT_PULLUP);
+    pinMode(beeperPin, OUTPUT);
     encoderState = (digitalRead(encoderA) << 1) | digitalRead(encoderB);
     attachInterrupt(digitalPinToInterrupt(encoderA), onEncoderChange, CHANGE);
     attachInterrupt(digitalPinToInterrupt(encoderB), onEncoderChange, CHANGE);
@@ -531,6 +580,7 @@ void setup() {
 }
 
 void loop() {
+    handleKillInput();
     handleEncoder();
     handleButton();
     handleSerial();
